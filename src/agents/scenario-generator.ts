@@ -106,7 +106,7 @@ Generate a complete unified scenario JSON based on the scenario description abov
     const errorMessages = validation.errors.map(
       (e) => `- ${e.path}: ${e.message}`
     );
-    progress.onRetrying(attempt, errorMessages.map((e) => e));
+    progress.onRetrying(attempt, errorMessages);
 
     messages.push({ role: "assistant", content: rawText });
     messages.push({

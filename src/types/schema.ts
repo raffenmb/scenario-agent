@@ -141,6 +141,7 @@ export interface RealitiConfig {
 
 export const ECG_RHYTHM_CODES: Record<string, number> = {
   "Normal Sinus Rhythm": 9,
+  "Sinus Rhythm": 9,
   "Sinus Bradycardia": 9,
   "Sinus Tachycardia": 9,
   "Asystole": 3,

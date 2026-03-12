@@ -94,9 +94,14 @@ function validateMonitorState(phase: UnifiedScenario["phases"][0], errors: Valid
   if (!ms) return;
 
   // ECG waveform vs rhythm
-  if (ms.ecgRhythm && ms.ecgWaveform !== undefined) {
+  if (ms.ecgRhythm) {
     const expectedCode = ECG_RHYTHM_CODES[ms.ecgRhythm];
-    if (expectedCode !== undefined && expectedCode !== ms.ecgWaveform) {
+    if (expectedCode === undefined) {
+      warnings.push({
+        path: `phases[${phase.id}].monitorState`,
+        message: `ecgRhythm "${ms.ecgRhythm}" is not in the ECG rhythm code table`,
+      });
+    } else if (ms.ecgWaveform !== undefined && expectedCode !== ms.ecgWaveform) {
       errors.push({
         path: `phases[${phase.id}].monitorState`,
         message: `ecgWaveform ${ms.ecgWaveform} does not match ecgRhythm "${ms.ecgRhythm}" (expected ${expectedCode})`,
