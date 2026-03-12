@@ -146,7 +146,7 @@ function buildPhasePanel(phase: Phase): string {
   <div class="card phase-card${isBranch ? " branch-card" : ""}">
     <div class="card-content">
       <div class="phase-title">${escHtml(phase.name)}</div>
-      ${phase.triggerCondition ? `<div class="phase-trigger">${escHtml(phase.triggerCondition)}</div>` : ""}
+      ${phase.triggerCondition ? `<div class="phase-trigger">▸ ${escHtml(phase.triggerCondition)}</div>` : ""}
       <div class="phase-desc">${escHtml(phase.description)}</div>
     </div>
   </div>
