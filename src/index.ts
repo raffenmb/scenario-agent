@@ -6,6 +6,7 @@ import { loadProtocolIndex, readProtocol } from "./protocols/loader";
 import { selectProtocols } from "./agents/protocol-selector";
 import { generateScenario } from "./agents/scenario-generator";
 import { exportRealiti } from "./export/realiti";
+import { exportHtml } from "./export/html";
 import { ValidationResult } from "./types/schema";
 
 const PROTOCOL_DIR = path.resolve(__dirname, "../protocol_docs");
@@ -123,10 +124,9 @@ async function main() {
   fs.writeFileSync(realitiPath, JSON.stringify(realitiJson, null, 2));
   console.log(`  ✓ ${path.relative(process.cwd(), realitiPath)}`);
 
-  // HTML export placeholder (will be wired in Task 10)
-  // const htmlPath = path.join(outputDir, "scenario.html");
-  // fs.writeFileSync(htmlPath, exportHtml(scenario));
-  // console.log(`  ✓ ${path.relative(process.cwd(), htmlPath)}`);
+  const htmlPath = path.join(outputDir, "scenario.html");
+  fs.writeFileSync(htmlPath, exportHtml(scenario));
+  console.log(`  ✓ ${path.relative(process.cwd(), htmlPath)}`);
 
   console.log("");
   console.log(`Done! Generated "${scenario.meta.name}"`);
