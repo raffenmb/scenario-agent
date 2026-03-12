@@ -52,6 +52,25 @@ function extractCss(): string {
 .priority-important{background:var(--orange-light,#fff7ed);color:var(--orange,#ea580c)}
 .priority-supplemental{background:#f5f5f4;color:var(--text-muted,#a8a29e)}
 .action-check{width:18px;height:18px;flex-shrink:0}
+.debrief-phase-card{overflow:hidden}
+.debrief-phase-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
+.debrief-phase-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted,#a8a29e)}
+.debrief-phase-score{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text-muted,#a8a29e)}
+.debrief-phase-score.score-perfect{color:var(--green,#16a34a)}
+.debrief-phase-score.score-none{color:var(--red,#dc2626)}
+.debrief-phase-body{padding:0 16px 14px}
+.debrief-done-section{background:var(--green-light,#f0fdf4);border:1px solid var(--green-border,#bbf7d0);border-radius:var(--radius-sm,10px);padding:6px 12px;margin-bottom:10px}
+.debrief-done-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--green,#16a34a)}
+.debrief-done-icon{font-weight:700;flex-shrink:0;font-size:12px}
+.debrief-done-text{color:var(--text-secondary,#57534e)}
+.debrief-missed-label{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--red,#dc2626);padding:4px 0 8px}
+.debrief-missed-row{background:var(--red-light,#fef2f2);border:1px solid var(--red-border,#fecaca);border-radius:var(--radius-sm,10px);padding:10px 12px;margin-bottom:6px}
+.debrief-missed-row:last-child{margin-bottom:0}
+.debrief-missed-top{display:flex;align-items:center;gap:8px}
+.debrief-missed-text{font-size:14px;font-weight:600;color:var(--text,#1c1917)}
+.debrief-missed-detail{padding:6px 0 0 0;margin-top:6px;border-top:1px solid var(--red-border,#fecaca)}
+.debrief-missed-rationale{font-size:12px;color:var(--text-secondary,#57534e);line-height:1.4}
+.debrief-missed-protocol{font-family:'DM Mono',monospace;font-size:11px;color:var(--blue,#2563eb);margin-top:2px}
 `;
   }
 
@@ -320,69 +339,98 @@ function buildDebriefActions() {
 
     if (!isFirst && !anyChecked) return;
 
-    var card = document.createElement('div');
-    card.className = 'card';
-    var title = document.createElement('div');
-    title.className = 'card-title';
-    title.textContent = phase.phaseName;
-    card.appendChild(title);
-
-    var content = document.createElement('div');
-    content.className = 'card-content';
-    content.style.padding = '4px 16px 12px';
-
+    var doneActions = [];
+    var missedActions = [];
     phase.actions.forEach(function(a, i) {
       var cb = checkboxes[i];
-      var done = cb && cb.checked;
-      var row = document.createElement('div');
-      row.style.cssText = 'padding:8px 0;border-bottom:1px solid #f5f5f4;font-size:14px';
-      if (i === phase.actions.length - 1) row.style.borderBottom = 'none';
-
-      var top = document.createElement('div');
-      top.style.cssText = 'display:flex;align-items:center;gap:10px';
-
-      var icon = document.createElement('span');
-      icon.style.cssText = 'flex-shrink:0;width:20px;text-align:center;font-size:14px';
-      icon.textContent = done ? '\\u2713' : '\\u2717';
-      icon.style.color = done ? 'var(--green)' : 'var(--red)';
-      icon.style.fontWeight = '700';
-
-      var badge = document.createElement('span');
-      badge.className = 'action-priority priority-' + a.priority;
-      badge.textContent = a.priority.toUpperCase();
-
-      var text = document.createElement('span');
-      text.textContent = a.action;
-      text.style.color = done ? 'var(--text-secondary)' : 'var(--red)';
-      if (!done) text.style.fontWeight = '600';
-
-      top.appendChild(icon);
-      top.appendChild(badge);
-      top.appendChild(text);
-      row.appendChild(top);
-
-      if (!done && (a.rationale || a.protocolReference)) {
-        var detail = document.createElement('div');
-        detail.style.cssText = 'margin:4px 0 0 30px;font-size:12px;line-height:1.4';
-        if (a.rationale) {
-          var reason = document.createElement('div');
-          reason.style.color = 'var(--text-muted)';
-          reason.textContent = a.rationale;
-          detail.appendChild(reason);
-        }
-        if (a.protocolReference) {
-          var proto = document.createElement('div');
-          proto.style.cssText = 'color:var(--blue);margin-top:2px;font-family:DM Mono,monospace;font-size:11px';
-          proto.textContent = a.protocolReference;
-          detail.appendChild(proto);
-        }
-        row.appendChild(detail);
-      }
-
-      content.appendChild(row);
+      if (cb && cb.checked) doneActions.push(a);
+      else missedActions.push(a);
     });
+    var total = phase.actions.length;
+    var doneCount = doneActions.length;
 
-    card.appendChild(content);
+    var card = document.createElement('div');
+    card.className = 'card debrief-phase-card';
+
+    // Phase header with score
+    var header = document.createElement('div');
+    header.className = 'debrief-phase-header';
+    var hLeft = document.createElement('div');
+    hLeft.className = 'debrief-phase-name';
+    hLeft.textContent = phase.phaseName;
+    var hRight = document.createElement('div');
+    hRight.className = 'debrief-phase-score';
+    if (doneCount === total) {
+      hRight.classList.add('score-perfect');
+    } else if (doneCount === 0) {
+      hRight.classList.add('score-none');
+    }
+    hRight.textContent = doneCount + '/' + total;
+    header.appendChild(hLeft);
+    header.appendChild(hRight);
+    card.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'debrief-phase-body';
+
+    // Completed actions — compact green strip
+    if (doneActions.length) {
+      var doneSection = document.createElement('div');
+      doneSection.className = 'debrief-done-section';
+      doneActions.forEach(function(a) {
+        var row = document.createElement('div');
+        row.className = 'debrief-done-row';
+        row.innerHTML = '<span class="debrief-done-icon">\\u2713</span><span class="debrief-done-text">' + a.action + '</span>';
+        doneSection.appendChild(row);
+      });
+      body.appendChild(doneSection);
+    }
+
+    // Missed actions — prominent red treatment
+    if (missedActions.length) {
+      var missLabel = document.createElement('div');
+      missLabel.className = 'debrief-missed-label';
+      missLabel.textContent = 'MISSED';
+      body.appendChild(missLabel);
+
+      missedActions.forEach(function(a) {
+        var row = document.createElement('div');
+        row.className = 'debrief-missed-row';
+
+        var top = document.createElement('div');
+        top.className = 'debrief-missed-top';
+        var badge = document.createElement('span');
+        badge.className = 'action-priority priority-' + a.priority;
+        badge.textContent = a.priority.toUpperCase();
+        var text = document.createElement('span');
+        text.className = 'debrief-missed-text';
+        text.textContent = a.action;
+        top.appendChild(badge);
+        top.appendChild(text);
+        row.appendChild(top);
+
+        if (a.rationale || a.protocolReference) {
+          var detail = document.createElement('div');
+          detail.className = 'debrief-missed-detail';
+          if (a.rationale) {
+            var reason = document.createElement('div');
+            reason.className = 'debrief-missed-rationale';
+            reason.textContent = a.rationale;
+            detail.appendChild(reason);
+          }
+          if (a.protocolReference) {
+            var proto = document.createElement('div');
+            proto.className = 'debrief-missed-protocol';
+            proto.textContent = a.protocolReference;
+            detail.appendChild(proto);
+          }
+          row.appendChild(detail);
+        }
+        body.appendChild(row);
+      });
+    }
+
+    card.appendChild(body);
     container.appendChild(card);
   });
 }
