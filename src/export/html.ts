@@ -223,12 +223,12 @@ function buildDebriefPanel(s: UnifiedScenario): string {
   const d = s.debriefing;
   return `
 <div class="panel" id="panel-debrief">
-  <div id="debrief-actions"></div>
   ${(d.learningObjectives ?? []).length ? `
   <div class="card accordion" onclick="this.classList.toggle('open')">
     <div class="card-title">Learning Objectives</div>
     <div class="accordion-body"><ul class="findings-notes">${(d.learningObjectives ?? []).map((o) => `<li>${escHtml(o)}</li>`).join("")}</ul></div>
   </div>` : ""}
+  <div id="debrief-actions" style="display:flex;flex-direction:column;gap:12px"></div>
 </div>`;
 }
 
@@ -347,12 +347,17 @@ function buildDebriefActions() {
       icon.style.color = done ? 'var(--green)' : 'var(--red)';
       icon.style.fontWeight = '700';
 
+      var badge = document.createElement('span');
+      badge.className = 'action-priority priority-' + a.priority;
+      badge.textContent = a.priority.toUpperCase();
+
       var text = document.createElement('span');
       text.textContent = a.action;
       text.style.color = done ? 'var(--text-secondary)' : 'var(--red)';
       if (!done) text.style.fontWeight = '600';
 
       top.appendChild(icon);
+      top.appendChild(badge);
       top.appendChild(text);
       row.appendChild(top);
 
