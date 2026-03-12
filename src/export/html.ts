@@ -47,8 +47,6 @@ function extractCss(): string {
 .phase-tab.hint-next .hint-dot{display:block;background:var(--green,#16a34a);animation:pulse-hint 1.5s infinite}
 @keyframes pulse-hint{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 .hint-dot{display:none;width:7px;height:7px;border-radius:50%;position:absolute;top:6px;right:4px}
-.action-card.open .action-detail{display:block}
-.action-detail{display:none;padding:8px 14px 14px 40px;font-size:13px;color:var(--text-secondary,#57534e)}
 .action-priority{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
 .priority-critical{background:var(--red-light,#fef2f2);color:var(--red,#dc2626)}
 .priority-important{background:var(--orange-light,#fff7ed);color:var(--orange,#ea580c)}
@@ -75,14 +73,12 @@ function buildBody(scenario: UnifiedScenario): string {
   <div class="phase-strip">
     <div class="phase-tab active" data-panel="scene" onclick="showPanel(this, 'scene')">Scene<span class="hint-dot"></span></div>
     ${allPhases.map((p) => `<div class="phase-tab${p.isDefault === false ? " branch" : ""}" data-panel="phase-${p.id}" onclick="showPanel(this, 'phase-${p.id}')">${escHtml(p.name)}<span class="hint-dot"></span></div>`).join("\n    ")}
-    <div class="phase-tab" data-panel="assessment" onclick="showPanel(this, 'assessment')">Assessment<span class="hint-dot"></span></div>
     <div class="phase-tab" data-panel="debrief" onclick="showPanel(this, 'debrief')">Debrief<span class="hint-dot"></span></div>
   </div>
 </div>
 <div class="content">
   ${buildScenePanel(s)}
   ${allPhases.map((p, i) => buildPhasePanel(p, i === 0 ? s.patient : undefined)).join("\n")}
-  ${buildAssessmentPanel(s)}
   ${buildDebriefPanel(s)}
 </div>`;
 }
@@ -213,40 +209,11 @@ function buildPhasePanel(phase: Phase, patient?: import("../types/schema").Patie
     <div class="card-title">Expected Actions</div>
     <div class="card-content">
       ${phase.expectedActions.map((a) => `
-      <div class="action-card">
-        <div class="action-top" onclick="this.parentElement.classList.toggle('open')">
-          <input type="checkbox" class="action-check" data-action-id="${a.id}" data-phase-id="${phase.id}" onclick="event.stopPropagation(); updateHints();">
-          <span class="action-priority priority-${a.priority}">${a.priority.toUpperCase()}</span>
-          <span class="action-text">${escHtml(a.action)}</span>
-        </div>
-        ${a.rationale ? `<div class="action-detail"><div class="action-rationale">${escHtml(a.rationale)}</div>${a.protocolReference ? `<div class="action-protocol">${escHtml(a.protocolReference)}</div>` : ""}</div>` : ""}
+      <div class="action-card" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f4">
+        <input type="checkbox" class="action-check" data-action-id="${a.id}" data-phase-id="${phase.id}" onclick="updateHints();">
+        <span class="action-priority priority-${a.priority}">${a.priority.toUpperCase()}</span>
+        <span class="action-text">${escHtml(a.action)}</span>
       </div>`).join("")}
-    </div>
-  </div>` : ""}
-</div>`;
-}
-
-function buildAssessmentPanel(s: UnifiedScenario): string {
-  const a = s.assessment;
-  return `
-<div class="panel" id="panel-assessment">
-  <div class="card">
-    <div class="card-title">Critical Actions</div>
-    <div class="card-content">
-      ${(a.criticalActions ?? []).map((action) => `<div class="action-card"><div class="action-top"><input type="checkbox"><span class="action-priority priority-critical">CRITICAL</span><span class="action-text">${escHtml(action)}</span></div></div>`).join("")}
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Expected Actions</div>
-    <div class="card-content">
-      ${(a.expectedActions ?? []).map((action) => `<div class="action-card"><div class="action-top"><input type="checkbox"><span class="action-priority priority-important">EXPECTED</span><span class="action-text">${escHtml(action)}</span></div></div>`).join("")}
-    </div>
-  </div>
-  ${(a.bonusActions ?? []).length ? `
-  <div class="card">
-    <div class="card-title">Bonus Actions</div>
-    <div class="card-content">
-      ${(a.bonusActions ?? []).map((action) => `<div class="action-card"><div class="action-top"><input type="checkbox"><span class="action-priority priority-supplemental">BONUS</span><span class="action-text">${escHtml(action)}</span></div></div>`).join("")}
     </div>
   </div>` : ""}
 </div>`;
@@ -256,25 +223,11 @@ function buildDebriefPanel(s: UnifiedScenario): string {
   const d = s.debriefing;
   return `
 <div class="panel" id="panel-debrief">
+  <div id="debrief-actions"></div>
   ${(d.learningObjectives ?? []).length ? `
-  <div class="card">
+  <div class="card accordion" onclick="this.classList.toggle('open')">
     <div class="card-title">Learning Objectives</div>
-    <div class="card-content"><ul class="findings-notes">${(d.learningObjectives ?? []).map((o) => `<li>${escHtml(o)}</li>`).join("")}</ul></div>
-  </div>` : ""}
-  ${(d.discussionQuestions ?? []).length ? `
-  <div class="card">
-    <div class="card-title">Discussion Questions</div>
-    <div class="card-content"><ul class="findings-notes">${(d.discussionQuestions ?? []).map((q) => `<li>${escHtml(q)}</li>`).join("")}</ul></div>
-  </div>` : ""}
-  ${(d.commonPitfalls ?? []).length ? `
-  <div class="card">
-    <div class="card-title">Common Pitfalls</div>
-    <div class="card-content"><ul class="findings-notes">${(d.commonPitfalls ?? []).map((p) => `<li>${escHtml(p)}</li>`).join("")}</ul></div>
-  </div>` : ""}
-  ${(d.keyTakeaways ?? []).length ? `
-  <div class="card">
-    <div class="card-title">Key Takeaways</div>
-    <div class="card-content"><ul class="findings-notes">${(d.keyTakeaways ?? []).map((t) => `<li>${escHtml(t)}</li>`).join("")}</ul></div>
+    <div class="accordion-body"><ul class="findings-notes">${(d.learningObjectives ?? []).map((o) => `<li>${escHtml(o)}</li>`).join("")}</ul></div>
   </div>` : ""}
 </div>`;
 }
@@ -297,8 +250,28 @@ function buildJs(scenario: UnifiedScenario): string {
       }))
   );
 
+  // Build phase action metadata for debrief summary
+  const firstPhaseId = scenario.phases[0]?.id ?? "";
+  const phaseActionData = JSON.stringify(
+    scenario.phases
+      .filter((p) => p.expectedActions?.length)
+      .map((p) => ({
+        phaseId: p.id,
+        phaseName: p.name,
+        actions: p.expectedActions!.map((a) => ({
+          id: a.id,
+          action: a.action,
+          priority: a.priority,
+          rationale: a.rationale ?? "",
+          protocolReference: a.protocolReference ?? "",
+        })),
+      }))
+  );
+
   return `
 var transitionData = ${transitionData};
+var phaseActionData = ${phaseActionData};
+var firstPhaseId = ${JSON.stringify(firstPhaseId)};
 
 function showPanel(tab, panelId) {
   document.querySelectorAll('.phase-tab').forEach(t => t.classList.remove('active'));
@@ -306,6 +279,7 @@ function showPanel(tab, panelId) {
   tab.classList.add('active');
   var panel = document.getElementById('panel-' + panelId);
   if (panel) panel.classList.add('active');
+  if (panelId === 'debrief') buildDebriefActions();
 }
 
 function updateHints() {
@@ -329,6 +303,82 @@ function updateHints() {
         targetTab.classList.add('hint-branch');
       }
     });
+  });
+}
+
+function buildDebriefActions() {
+  var container = document.getElementById('debrief-actions');
+  if (!container) return;
+  container.innerHTML = '';
+
+  phaseActionData.forEach(function(phase) {
+    var isFirst = phase.phaseId === firstPhaseId;
+    var checkboxes = phase.actions.map(function(a) {
+      return document.querySelector('[data-action-id="' + a.id + '"][data-phase-id="' + phase.phaseId + '"]');
+    });
+    var anyChecked = checkboxes.some(function(cb) { return cb && cb.checked; });
+
+    if (!isFirst && !anyChecked) return;
+
+    var card = document.createElement('div');
+    card.className = 'card';
+    var title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = phase.phaseName;
+    card.appendChild(title);
+
+    var content = document.createElement('div');
+    content.className = 'card-content';
+    content.style.padding = '4px 16px 12px';
+
+    phase.actions.forEach(function(a, i) {
+      var cb = checkboxes[i];
+      var done = cb && cb.checked;
+      var row = document.createElement('div');
+      row.style.cssText = 'padding:8px 0;border-bottom:1px solid #f5f5f4;font-size:14px';
+      if (i === phase.actions.length - 1) row.style.borderBottom = 'none';
+
+      var top = document.createElement('div');
+      top.style.cssText = 'display:flex;align-items:center;gap:10px';
+
+      var icon = document.createElement('span');
+      icon.style.cssText = 'flex-shrink:0;width:20px;text-align:center;font-size:14px';
+      icon.textContent = done ? '\\u2713' : '\\u2717';
+      icon.style.color = done ? 'var(--green)' : 'var(--red)';
+      icon.style.fontWeight = '700';
+
+      var text = document.createElement('span');
+      text.textContent = a.action;
+      text.style.color = done ? 'var(--text-secondary)' : 'var(--red)';
+      if (!done) text.style.fontWeight = '600';
+
+      top.appendChild(icon);
+      top.appendChild(text);
+      row.appendChild(top);
+
+      if (!done && (a.rationale || a.protocolReference)) {
+        var detail = document.createElement('div');
+        detail.style.cssText = 'margin:4px 0 0 30px;font-size:12px;line-height:1.4';
+        if (a.rationale) {
+          var reason = document.createElement('div');
+          reason.style.color = 'var(--text-muted)';
+          reason.textContent = a.rationale;
+          detail.appendChild(reason);
+        }
+        if (a.protocolReference) {
+          var proto = document.createElement('div');
+          proto.style.cssText = 'color:var(--blue);margin-top:2px;font-family:DM Mono,monospace;font-size:11px';
+          proto.textContent = a.protocolReference;
+          detail.appendChild(proto);
+        }
+        row.appendChild(detail);
+      }
+
+      content.appendChild(row);
+    });
+
+    card.appendChild(content);
+    container.appendChild(card);
   });
 }
 
