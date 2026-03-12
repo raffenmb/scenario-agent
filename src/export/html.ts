@@ -52,6 +52,16 @@ function extractCss(): string {
 .priority-important{background:var(--orange-light,#fff7ed);color:var(--orange,#ea580c)}
 .priority-supplemental{background:#f5f5f4;color:var(--text-muted,#a8a29e)}
 .action-check{width:18px;height:18px;flex-shrink:0}
+.top-bar-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.timer-widget{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+#timer-display{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--text-muted,#a8a29e);font-variant-numeric:tabular-nums;line-height:1}
+.timer-controls{display:flex;gap:4px}
+.timer-btn{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;border:1px solid var(--card-border,#e8e6e1);background:var(--card,#fff);color:var(--text-secondary,#57534e);cursor:pointer;line-height:1.4}
+.timer-btn:hover{background:#f5f5f4}
+.timer-btn-stop{border-color:var(--red-border,#fecaca);color:var(--red,#dc2626)}
+.timer-btn-stop:hover{background:var(--red-light,#fef2f2)}
+#timer-display.timer-warn{color:var(--orange,#ea580c)}
+#timer-display.timer-danger{color:var(--red,#dc2626)}
 .debrief-phase-card{overflow:hidden}
 .debrief-phase-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
 .debrief-phase-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted,#a8a29e)}
@@ -83,11 +93,23 @@ function buildBody(scenario: UnifiedScenario): string {
 
   return `
 <div class="top-bar">
-  <div class="scenario-name">${escHtml(s.meta.name)}</div>
-  <div class="scenario-tags">
-    <span class="tag tag-difficulty">${escHtml(s.meta.difficulty)}</span>
-    ${s.meta.category ? `<span class="tag tag-category">${escHtml(s.meta.category)}</span>` : ""}
-    <span class="tag tag-time">${Math.round(s.meta.totalTimeSeconds / 60)} min</span>
+  <div class="top-bar-header">
+    <div>
+      <div class="scenario-name">${escHtml(s.meta.name)}</div>
+      <div class="scenario-tags">
+        <span class="tag tag-difficulty">${escHtml(s.meta.difficulty)}</span>
+        ${s.meta.category ? `<span class="tag tag-category">${escHtml(s.meta.category)}</span>` : ""}
+      </div>
+    </div>
+    <div class="timer-widget" id="scenario-timer" data-total="${s.meta.totalTimeSeconds}">
+      <span id="timer-display">${Math.floor(s.meta.totalTimeSeconds / 60)}:${String(s.meta.totalTimeSeconds % 60).padStart(2, "0")}</span>
+      <div class="timer-controls">
+        <button id="timer-start" class="timer-btn" onclick="timerStart()">start</button>
+        <button id="timer-pause" class="timer-btn" onclick="timerPause()" style="display:none">pause</button>
+        <button id="timer-stop" class="timer-btn timer-btn-stop" onclick="timerStop()" style="display:none">stop</button>
+        <button id="timer-reset" class="timer-btn" onclick="timerReset()" style="display:none">reset</button>
+      </div>
+    </div>
   </div>
   <div class="phase-strip">
     <div class="phase-tab active" data-panel="scene" onclick="showPanel(this, 'scene')">Scene<span class="hint-dot"></span></div>
@@ -444,6 +466,62 @@ document.querySelectorAll('.accordion').forEach(function(el) {
     if (e.target.type === 'checkbox') return;
   });
 });
+
+// Timer
+var timerEl = document.getElementById('scenario-timer');
+var timerTotal = timerEl ? parseInt(timerEl.getAttribute('data-total')) : 0;
+var timerRemaining = timerTotal;
+var timerInterval = null;
+
+function timerFormat(s) {
+  var m = Math.floor(s / 60);
+  var sec = s % 60;
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function timerUpdate() {
+  var d = document.getElementById('timer-display');
+  if (!d) return;
+  d.textContent = timerFormat(timerRemaining);
+  d.classList.remove('timer-warn', 'timer-danger');
+  if (timerRemaining <= 60) d.classList.add('timer-danger');
+  else if (timerRemaining <= timerTotal * 0.25) d.classList.add('timer-warn');
+}
+
+function timerStart() {
+  document.getElementById('timer-start').style.display = 'none';
+  document.getElementById('timer-pause').style.display = '';
+  document.getElementById('timer-stop').style.display = '';
+  document.getElementById('timer-reset').style.display = 'none';
+  timerInterval = setInterval(function() {
+    timerRemaining--;
+    timerUpdate();
+    if (timerRemaining <= 0) { timerRemaining = 0; timerStop(); }
+  }, 1000);
+}
+
+function timerPause() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('timer-pause').style.display = 'none';
+  document.getElementById('timer-start').style.display = '';
+}
+
+function timerStop() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('timer-start').style.display = 'none';
+  document.getElementById('timer-pause').style.display = 'none';
+  document.getElementById('timer-stop').style.display = 'none';
+  document.getElementById('timer-reset').style.display = '';
+}
+
+function timerReset() {
+  timerRemaining = timerTotal;
+  timerUpdate();
+  document.getElementById('timer-reset').style.display = 'none';
+  document.getElementById('timer-start').style.display = '';
+}
 `;
 }
 
