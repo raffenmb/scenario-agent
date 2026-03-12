@@ -43,6 +43,7 @@ The JSON must have these top-level keys: meta, patient, scene, phases, assessmen
   - events (string): Events leading to EMS call
 
 ### scene
+- dispatch (string): A single sentence as the paramedic would hear it from dispatch over the radio. Keep it realistic but generic — do not reveal the diagnosis or teaching point. For example, a postictal patient should dispatch as "altered mental status," not "seizure." A STEMI with chest pain dispatches as "chest pain." Include age, sex, brief complaint, and location type.
 - location (string): Detailed location description
 - time (string): Time and day context
 - safety (string): Scene safety considerations

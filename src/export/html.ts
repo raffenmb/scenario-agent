@@ -81,7 +81,7 @@ function buildBody(scenario: UnifiedScenario): string {
 </div>
 <div class="content">
   ${buildScenePanel(s)}
-  ${allPhases.map((p) => buildPhasePanel(p)).join("\n")}
+  ${allPhases.map((p, i) => buildPhasePanel(p, i === 0 ? s.patient : undefined)).join("\n")}
   ${buildAssessmentPanel(s)}
   ${buildDebriefPanel(s)}
 </div>`;
@@ -90,10 +90,13 @@ function buildBody(scenario: UnifiedScenario): string {
 function buildScenePanel(s: UnifiedScenario): string {
   const scene = s.scene;
   const p = s.patient;
-  const h = p.history;
 
   return `
 <div class="panel active" id="panel-scene">
+  ${scene?.dispatch ? `<div class="card">
+    <div class="card-title">Dispatch</div>
+    <div class="card-content" style="font-size:14px;color:var(--text-secondary)">${escHtml(scene.dispatch)}</div>
+  </div>` : ""}
   <div class="card accordion" onclick="this.classList.toggle('open')">
     <div class="card-title">Scene Setup</div>
     <div class="accordion-body">
@@ -118,23 +121,10 @@ function buildScenePanel(s: UnifiedScenario): string {
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">SAMPLE History</div>
-    <div class="card-content">
-      <div class="sample-grid">
-        <div class="sample-cell full"><span class="sample-letter">S</span><div class="sample-name">Signs/Symptoms</div><div class="sample-text">${escHtml(p.chiefComplaint)}</div></div>
-        <div class="sample-cell"><span class="sample-letter">A</span><div class="sample-name">Allergies</div><div class="sample-text">${escHtml((h.allergies ?? []).join(", ") || "NKDA")}</div></div>
-        <div class="sample-cell"><span class="sample-letter">M</span><div class="sample-name">Medications</div><div class="sample-text">${escHtml((h.medications ?? []).join(", ") || "None")}</div></div>
-        <div class="sample-cell"><span class="sample-letter">P</span><div class="sample-name">Past Medical</div><div class="sample-text">${escHtml((h.pastMedical ?? []).join(", ") || "None")}</div></div>
-        <div class="sample-cell"><span class="sample-letter">L</span><div class="sample-name">Last Oral Intake</div><div class="sample-text">${escHtml(h.lastOralIntake ?? "Unknown")}</div></div>
-        <div class="sample-cell full"><span class="sample-letter">E</span><div class="sample-name">Events</div><div class="sample-text">${escHtml(h.events ?? h.hpi ?? "")}</div></div>
-      </div>
-    </div>
-  </div>
 </div>`;
 }
 
-function buildPhasePanel(phase: Phase): string {
+function buildPhasePanel(phase: Phase, patient?: import("../types/schema").Patient): string {
   const cp = phase.clinicalPresentation;
   const ms = phase.monitorState;
   const isBranch = phase.isDefault === false;
@@ -150,6 +140,16 @@ function buildPhasePanel(phase: Phase): string {
       <div class="phase-desc">${escHtml(phase.description)}</div>
     </div>
   </div>
+
+  ${cp?.airway || cp?.breathing || cp?.circulation ? `
+  <div class="card">
+    <div class="card-title">Primary Survey (ABCs)</div>
+    <div class="card-content">
+      ${cp.airway ? `<div class="finding-row"><div class="finding-label">Airway</div><div class="finding-value">${escHtml(cp.airway)}</div></div>` : ""}
+      ${cp.breathing ? `<div class="finding-row"><div class="finding-label">Breathing</div><div class="finding-value">${escHtml(cp.breathing)}</div></div>` : ""}
+      ${cp.circulation ? `<div class="finding-row"><div class="finding-label">Circulation</div><div class="finding-value">${escHtml(cp.circulation)}</div></div>` : ""}
+    </div>
+  </div>` : ""}
 
   ${cp?.avpu ? `
   <div class="card">
@@ -190,6 +190,21 @@ function buildPhasePanel(phase: Phase): string {
       ${cp.motorFunction ? `<div class="finding-row"><div class="finding-label">Motor</div><div class="finding-value">${escHtml(cp.motorFunction)}</div></div>` : ""}
       ${cp.patientSpeech ? `<div class="finding-row"><div class="finding-label">Speech</div><div class="finding-value speech">"${escHtml(cp.patientSpeech)}"</div></div>` : ""}
       ${cp.otherFindings?.length ? `<ul class="findings-notes">${cp.otherFindings.map((f) => `<li>${escHtml(f)}</li>`).join("")}</ul>` : ""}
+    </div>
+  </div>` : ""}
+
+  ${patient ? `
+  <div class="card">
+    <div class="card-title">SAMPLE History</div>
+    <div class="card-content">
+      <div class="sample-grid">
+        <div class="sample-cell full"><span class="sample-letter">S</span><div class="sample-name">Signs/Symptoms</div><div class="sample-text">${escHtml(patient.chiefComplaint)}</div></div>
+        <div class="sample-cell"><span class="sample-letter">A</span><div class="sample-name">Allergies</div><div class="sample-text">${escHtml((patient.history.allergies ?? []).join(", ") || "NKDA")}</div></div>
+        <div class="sample-cell"><span class="sample-letter">M</span><div class="sample-name">Medications</div><div class="sample-text">${escHtml((patient.history.medications ?? []).join(", ") || "None")}</div></div>
+        <div class="sample-cell"><span class="sample-letter">P</span><div class="sample-name">Past Medical</div><div class="sample-text">${escHtml((patient.history.pastMedical ?? []).join(", ") || "None")}</div></div>
+        <div class="sample-cell"><span class="sample-letter">L</span><div class="sample-name">Last Oral Intake</div><div class="sample-text">${escHtml(patient.history.lastOralIntake ?? "Unknown")}</div></div>
+        <div class="sample-cell full"><span class="sample-letter">E</span><div class="sample-name">Events</div><div class="sample-text">${escHtml(patient.history.events ?? patient.history.hpi ?? "")}</div></div>
+      </div>
     </div>
   </div>` : ""}
 

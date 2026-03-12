@@ -45,6 +45,7 @@ export interface PatientHistory {
 }
 
 export interface Scene {
+  dispatch?: string;
   location?: string;
   time?: string;
   safety?: string;
