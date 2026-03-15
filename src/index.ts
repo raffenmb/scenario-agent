@@ -8,8 +8,12 @@ import { selectProtocols } from './agents/protocol-selector';
 import { generateScenario } from './agents/scenario-generator';
 import { exportRealiti } from './export/realiti';
 import { exportHtml } from './export/html';
-import { ValidationResult } from './types/schema';
+import { ValidationResult, ProtocolEntry } from './types/schema';
 import { selectProtocolSets } from './cli/set-selector';
+import { select, input, confirm as confirmPrompt } from '@inquirer/prompts';
+import { buildScenarioIndex } from './batch/scenario-index';
+import { generateBatchPlan } from './agents/batch-planner';
+import { executeBatch } from './batch/orchestrator';
 
 const PROTOCOL_DIR = path.resolve(__dirname, '../protocol_docs');
 const OUTPUT_DIR = path.resolve(__dirname, '../output');
@@ -241,6 +245,102 @@ async function runIngestCommand(args: string[]) {
 
 // ── GENERATE COMMAND ──
 
+async function runBatchFlow(apiKey: string, priorityOrder: string[], protocolIndex: ProtocolEntry[]) {
+  // Step 1: Batch size
+  const sizeStr = await input({ message: 'How many scenarios would you like to generate?' });
+  const batchSize = parseInt(sizeStr, 10);
+  if (isNaN(batchSize) || batchSize < 1) {
+    console.error('Invalid number.');
+    process.exit(1);
+  }
+
+  if (batchSize > 15) {
+    const proceed = await confirmPrompt({
+      message: `Generating ${batchSize} scenarios will consume significant API tokens. Continue?`,
+      default: false,
+    });
+    if (!proceed) {
+      console.log('Cancelled.');
+      return;
+    }
+  }
+
+  // Step 2: Optional constraints
+  const constraints = await input({
+    message: 'Any specific constraints? (e.g., BLS-only, focus on cardiac, intermediate difficulty)\n  Press Enter to skip:',
+  });
+
+  // Step 3: Build scenario index
+  console.log('\nIndexing existing scenarios...');
+  const scenarioIndex = buildScenarioIndex(OUTPUT_DIR);
+  console.log(`  ${scenarioIndex.length} existing scenario(s) found`);
+  console.log('');
+
+  // Step 4: Generate batch plan
+  console.log('─── Batch Planning ───');
+  console.log('  Building batch plan...');
+  let plan = await generateBatchPlan(protocolIndex, scenarioIndex, batchSize, constraints, apiKey);
+
+  // Step 5: Display plan and get approval
+  let approved = false;
+  while (!approved) {
+    console.log(`\nBatch Plan (${plan.length} scenarios):\n`);
+    plan.forEach((entry, i) => {
+      console.log(`  ${i + 1}. ${entry.title} (${entry.difficulty})`);
+      console.log(`     Protocols: ${entry.targetProtocols.join(', ')}`);
+      console.log(`     ${entry.description}`);
+      console.log(`     Objectives: ${entry.learningObjectives.join(', ')}`);
+      console.log('');
+    });
+
+    const action = await select({
+      message: 'Approve this plan?',
+      choices: [
+        { name: 'Approve — start generating', value: 'approve' },
+        { name: 'Revise — provide feedback', value: 'revise' },
+        { name: 'Cancel', value: 'cancel' },
+      ],
+    });
+
+    if (action === 'approve') {
+      approved = true;
+    } else if (action === 'cancel') {
+      console.log('Cancelled.');
+      return;
+    } else {
+      const feedback = await input({ message: 'What would you like to change?' });
+      console.log('\n  Regenerating plan...');
+      plan = await generateBatchPlan(
+        protocolIndex,
+        scenarioIndex,
+        batchSize,
+        constraints ? `${constraints}\n\nRevision feedback: ${feedback}` : feedback,
+        apiKey
+      );
+    }
+  }
+
+  // Step 6: Execute batch
+  console.log('');
+  console.log('─── Batch Generation ───');
+  const result = await executeBatch(plan, protocolIndex, apiKey, OUTPUT_DIR, {
+    onScenarioStart: (i, total, title) =>
+      process.stdout.write(`  Generating scenario ${i}/${total}: ${title}... `),
+    onScenarioSuccess: (i, scenarioId) =>
+      console.log(`✓ (${scenarioId})`),
+    onScenarioFailure: (i, title, error) =>
+      console.log(`✗ (${error})`),
+  });
+
+  // Step 7: Summary
+  console.log('');
+  console.log(`Batch complete: ${result.succeeded.length}/${plan.length} scenarios generated successfully.`);
+  if (result.failed.length > 0) {
+    console.log('Failed:');
+    result.failed.forEach((f) => console.log(`  - ${f.planEntry.title}: ${f.error}`));
+  }
+}
+
 async function runGenerateCommand(scenarioInput?: string) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -248,15 +348,7 @@ async function runGenerateCommand(scenarioInput?: string) {
     process.exit(1);
   }
 
-  const userInput = scenarioInput || await promptUser('Describe your scenario:\n> ');
-  if (!userInput) {
-    console.error('No scenario description provided.');
-    process.exit(1);
-  }
-
-  console.log('');
-
-  // Discover and select protocol sets
+  // Discover and select protocol sets (shared by both flows)
   const allSets = discoverSets(PROTOCOL_DIR);
   if (allSets.length === 0) {
     console.error('No protocol sets found in protocol_docs/. Run the ingest command first or create a subdirectory.');
@@ -269,6 +361,18 @@ async function runGenerateCommand(scenarioInput?: string) {
     return { name, protocolCount: count };
   });
 
+  // Mode selection (skip if scenario input provided via CLI arg — that's single mode)
+  let mode: 'single' | 'batch' = 'single';
+  if (!scenarioInput) {
+    mode = await select({
+      message: 'What would you like to do?',
+      choices: [
+        { name: 'Generate a single scenario', value: 'single' as const },
+        { name: 'Generate a batch of scenarios', value: 'batch' as const },
+      ],
+    });
+  }
+
   const { priorityOrder } = await selectProtocolSets(setInfo);
   console.log('');
 
@@ -276,6 +380,18 @@ async function runGenerateCommand(scenarioInput?: string) {
   const protocolIndex = loadProtocolIndex(PROTOCOL_DIR, priorityOrder);
   console.log(`  ${protocolIndex.length} protocols found across ${priorityOrder.length} set(s)`);
   console.log('');
+
+  if (mode === 'batch') {
+    await runBatchFlow(apiKey, priorityOrder, protocolIndex);
+    return;
+  }
+
+  // Single scenario flow (existing logic)
+  const userInput = scenarioInput || await promptUser('Describe your scenario:\n> ');
+  if (!userInput) {
+    console.error('No scenario description provided.');
+    process.exit(1);
+  }
 
   console.log('─── Stage 1: Protocol Selection ───');
   const selections = await selectProtocols(userInput, protocolIndex, apiKey, {
