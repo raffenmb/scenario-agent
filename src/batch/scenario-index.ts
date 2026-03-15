@@ -52,3 +52,19 @@ export function buildScenarioIndex(outputDir: string): ScenarioIndexEntry[] {
 
   return entries;
 }
+
+export function formatScenarioIndexForPrompt(index: ScenarioIndexEntry[]): string {
+  if (index.length === 0) {
+    return 'No existing scenarios found.';
+  }
+
+  const lines = index.map((e) => {
+    const protocols = e.protocols.join(', ');
+    const objectives = e.learningObjectives.length > 0
+      ? e.learningObjectives.slice(0, 3).join('; ')
+      : 'none listed';
+    return `- "${e.name}" (${e.difficulty}) | Protocols: ${protocols} | Patient: ${e.patientAge}${e.patientSex === 'male' ? 'M' : 'F'} | Phases: ${e.phaseCount}${e.hasBranching ? ' (branching)' : ''} | Objectives: ${objectives}`;
+  });
+
+  return `Existing scenarios (${index.length} total):\n${lines.join('\n')}`;
+}

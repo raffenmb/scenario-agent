@@ -1,4 +1,4 @@
-import { buildScenarioIndex, ScenarioIndexEntry } from './scenario-index';
+import { buildScenarioIndex, formatScenarioIndexForPrompt, ScenarioIndexEntry } from './scenario-index';
 import path from 'path';
 
 const OUTPUT_DIR = path.resolve(__dirname, '../../output');
@@ -27,5 +27,20 @@ describe('buildScenarioIndex', () => {
   it('returns empty array for nonexistent directory', () => {
     const index = buildScenarioIndex('/nonexistent/path');
     expect(index).toEqual([]);
+  });
+});
+
+describe('formatScenarioIndexForPrompt', () => {
+  it('formats index entries as a readable text block', () => {
+    const index = buildScenarioIndex(OUTPUT_DIR);
+    const formatted = formatScenarioIndexForPrompt(index);
+    expect(formatted).toContain('Hypoglycemic Emergency');
+    expect(formatted).toContain('beginner');
+    expect(formatted).toContain('medical-hypoglycemia');
+  });
+
+  it('returns a message when no scenarios exist', () => {
+    const formatted = formatScenarioIndexForPrompt([]);
+    expect(formatted).toContain('No existing scenarios');
   });
 });
