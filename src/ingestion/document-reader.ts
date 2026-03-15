@@ -81,30 +81,32 @@ async function readDocxFile(filePath: string): Promise<DocumentChunk[]> {
 }
 
 async function readPdfFile(filePath: string): Promise<DocumentChunk[]> {
-  const pdfjs = await import('pdfjs-dist');
-  // Suppress worker warnings in Node.js environment
-  if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = '';
-  }
-  const data = new Uint8Array(fs.readFileSync(filePath));
-  const doc = await pdfjs.getDocument({ data }).promise;
-  const totalPages = doc.numPages;
-  const chunks: DocumentChunk[] = [];
+  const pdfParseModule = await import('pdf-parse');
+  const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+  const buffer = fs.readFileSync(filePath);
+  const pdf = await pdfParse(buffer);
 
-  for (let i = 1; i <= totalPages; i++) {
-    const page = await doc.getPage(i);
-    const textContent = await page.getTextContent();
-    const text = textContent.items
-      .map((item: any) => item.str)
-      .join(' ');
+  // pdf-parse returns all text concatenated; split by page breaks if present
+  // The numpages property gives us the page count
+  const totalPages = pdf.numpages;
 
-    chunks.push({
-      pageNumber: i,
-      totalPages,
+  // pdf-parse doesn't give per-page text easily, so treat the whole document as chunks
+  // Split by form feeds (page breaks) if present, otherwise treat as single chunk
+  const pageTexts = pdf.text.split('\f').filter((t: string) => t.trim().length > 0);
+
+  if (pageTexts.length === 0) {
+    return [{
+      pageNumber: 1,
+      totalPages: 1,
       type: 'text',
-      content: text,
-    });
+      content: pdf.text,
+    }];
   }
 
-  return chunks;
+  return pageTexts.map((text: string, i: number) => ({
+    pageNumber: i + 1,
+    totalPages: pageTexts.length,
+    type: 'text' as const,
+    content: text.trim(),
+  }));
 }
