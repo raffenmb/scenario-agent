@@ -41,12 +41,8 @@ function extractCss(): string {
   }
 
   // Ensure hint styles exist (may not be in the static template)
-  if (!css.includes("hint-branch")) {
+  if (!css.includes("timer-widget")) {
     css += `
-.phase-tab.hint-branch .hint-dot{display:block;background:var(--red,#dc2626);animation:pulse-hint 1s infinite}
-.phase-tab.hint-next .hint-dot{display:block;background:var(--green,#16a34a);animation:pulse-hint 1.5s infinite}
-@keyframes pulse-hint{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.hint-dot{display:none;width:7px;height:7px;border-radius:50%;position:absolute;top:6px;right:4px}
 .action-priority{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
 .priority-critical{background:var(--red-light,#fef2f2);color:var(--red,#dc2626)}
 .priority-important{background:var(--orange-light,#fff7ed);color:var(--orange,#ea580c)}
@@ -112,9 +108,9 @@ function buildBody(scenario: UnifiedScenario): string {
     </div>
   </div>
   <div class="phase-strip">
-    <div class="phase-tab active" data-panel="scene" onclick="showPanel(this, 'scene')">Scene<span class="hint-dot"></span></div>
-    ${allPhases.map((p) => `<div class="phase-tab${p.isDefault === false ? " branch" : ""}" data-panel="phase-${p.id}" onclick="showPanel(this, 'phase-${p.id}')">${escHtml(p.name)}<span class="hint-dot"></span></div>`).join("\n    ")}
-    <div class="phase-tab" data-panel="debrief" onclick="showPanel(this, 'debrief')">Debrief<span class="hint-dot"></span></div>
+    <div class="phase-tab active" data-panel="scene" onclick="showPanel(this, 'scene')">Scene</div>
+    ${allPhases.map((p) => `<div class="phase-tab${p.isDefault === false ? " branch" : ""}" data-panel="phase-${p.id}" onclick="showPanel(this, 'phase-${p.id}')">${escHtml(p.name)}</div>`).join("\n    ")}
+    <div class="phase-tab" data-panel="debrief" onclick="showPanel(this, 'debrief')">Debrief</div>
   </div>
 </div>
 <div class="content">
@@ -251,7 +247,7 @@ function buildPhasePanel(phase: Phase, patient?: import("../types/schema").Patie
     <div class="card-content">
       ${phase.expectedActions.map((a) => `
       <div class="action-card" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f4">
-        <input type="checkbox" class="action-check" data-action-id="${a.id}" data-phase-id="${phase.id}" onclick="updateHints();">
+        <input type="checkbox" class="action-check" data-action-id="${a.id}" data-phase-id="${phase.id}">
         <span class="action-priority priority-${a.priority}">${a.priority.toUpperCase()}</span>
         <span class="action-text">${escHtml(a.action)}</span>
       </div>`).join("")}
@@ -279,18 +275,6 @@ function vitalCell(name: string, value: number | string | undefined, unit: strin
 }
 
 function buildJs(scenario: UnifiedScenario): string {
-  const transitionData = JSON.stringify(
-    scenario.phases
-      .filter((p) => p.transitions?.length)
-      .map((p) => ({
-        phaseId: p.id,
-        transitions: p.transitions!.map((t) => ({
-          targetPhaseId: t.targetPhaseId,
-          triggerActionIds: t.triggerActionIds ?? [],
-        })),
-      }))
-  );
-
   // Build phase action metadata for debrief summary
   const firstPhaseId = scenario.phases[0]?.id ?? "";
   const phaseActionData = JSON.stringify(
@@ -310,7 +294,6 @@ function buildJs(scenario: UnifiedScenario): string {
   );
 
   return `
-var transitionData = ${transitionData};
 var phaseActionData = ${phaseActionData};
 var firstPhaseId = ${JSON.stringify(firstPhaseId)};
 
@@ -321,30 +304,6 @@ function showPanel(tab, panelId) {
   var panel = document.getElementById('panel-' + panelId);
   if (panel) panel.classList.add('active');
   if (panelId === 'debrief') buildDebriefActions();
-}
-
-function updateHints() {
-  document.querySelectorAll('.phase-tab').forEach(t => {
-    t.classList.remove('hint-branch', 'hint-next');
-  });
-
-  transitionData.forEach(function(phase) {
-    phase.transitions.forEach(function(t) {
-      if (!t.triggerActionIds.length) return;
-
-      var allCompleted = t.triggerActionIds.every(function(actionId) {
-        var checkbox = document.querySelector('[data-action-id="' + actionId + '"]');
-        return checkbox && checkbox.checked;
-      });
-
-      var targetTab = document.querySelector('[data-panel="phase-' + t.targetPhaseId + '"]');
-      if (!targetTab) return;
-
-      if (!allCompleted) {
-        targetTab.classList.add('hint-branch');
-      }
-    });
-  });
 }
 
 function buildDebriefActions() {
@@ -456,9 +415,6 @@ function buildDebriefActions() {
     container.appendChild(card);
   });
 }
-
-// Initialize hints
-updateHints();
 
 // Accordion toggle
 document.querySelectorAll('.accordion').forEach(function(el) {

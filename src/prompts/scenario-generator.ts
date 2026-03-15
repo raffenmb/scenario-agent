@@ -134,6 +134,28 @@ COPD exacerbation: 50 | Anaphylaxis: 60 | Foreign body: 80 | Complete/tension pn
 6. The default path (isDefault: true) must form a logical clinical progression
 7. At least one phase must have no triggerCondition (the entry phase)
 
+## Medication Actions Rule (CRITICAL)
+
+When an expectedAction involves administering a medication, the action text MUST include ALL of the following from the protocol:
+- **Drug name**
+- **Dose** (with weight-based calculation if applicable to this patient)
+- **Route** (IV, IM, IO, IN, PO, SQ, nebulized, etc.)
+- **Concentration/formulation** if specified in the protocol (e.g., "D10%" vs "D50%")
+- **Rate** if specified (e.g., "infuse over 10 minutes")
+- **Repeat/max dosing** if specified (e.g., "may repeat x1", "max 3 mg")
+
+BAD:  "Administer dextrose"
+BAD:  "Give glucagon"
+BAD:  "Administer epinephrine per protocol"
+GOOD: "Administer Dextrose 10% 250 mL (25 g) IV, titrate to mental status improvement"
+GOOD: "Administer Glucagon 1 mg IM if IV access cannot be established"
+GOOD: "Administer Epinephrine 1:1,000 (1 mg/mL) 0.3 mg IM in the lateral thigh; may repeat every 5-15 minutes"
+
+If the protocol provides adult vs pediatric dosing, use the one appropriate for this patient's age.
+If the protocol provides weight-based dosing, calculate the actual dose for this patient's weight.
+
+This rule applies to expectedActions in phases AND to criticalActions/expectedActions in the assessment section.
+
 ## Generation Guidelines
 
 - Create realistic, clinically accurate scenarios based on the protocols provided
