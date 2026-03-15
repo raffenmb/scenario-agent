@@ -1,0 +1,13 @@
+# Cardiac Arrest Protocol
+
+Assess initial rhythm.
+
+If rhythm is VF/pVT:
+    Deliver defibrillation at manufacturer-recommended dose.
+    Resume CPR immediately for 2 minutes.
+
+# Bradycardia Protocol
+
+If heart rate < 60 bpm with symptoms:
+    Administer Atropine 1mg IV.
+    May repeat every 3-5 minutes. Max 3mg.
