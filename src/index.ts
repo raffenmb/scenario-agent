@@ -3,7 +3,7 @@ import "dotenv/config";
 import * as readline from "readline";
 import * as fs from "fs";
 import * as path from "path";
-import { loadProtocolIndex, readProtocol } from "./protocols/loader";
+import { loadProtocolIndex, readProtocol, discoverSets } from "./protocols/loader";
 import { selectProtocols } from "./agents/protocol-selector";
 import { generateScenario } from "./agents/scenario-generator";
 import { exportRealiti } from "./export/realiti";
@@ -70,8 +70,14 @@ async function main() {
   console.log("");
 
   console.log("Loading protocol index...");
-  const protocolIndex = loadProtocolIndex(PROTOCOL_DIR);
-  console.log(`  ${protocolIndex.length} protocols found`);
+  const allSets = discoverSets(PROTOCOL_DIR);
+  if (allSets.length === 0) {
+    console.error("No protocol sets found in protocol_docs/. Run 'ingest' first or move protocols into a subdirectory.");
+    process.exit(1);
+  }
+  // For now, select all sets. Interactive selection will be added in Task 12.
+  const protocolIndex = loadProtocolIndex(PROTOCOL_DIR, allSets);
+  console.log(`  ${protocolIndex.length} protocols found across ${allSets.length} set(s): ${allSets.join(", ")}`);
   console.log("");
 
   console.log("─── Stage 1: Protocol Selection ───");

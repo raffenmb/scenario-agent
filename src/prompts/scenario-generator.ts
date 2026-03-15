@@ -156,6 +156,10 @@ If the protocol provides weight-based dosing, calculate the actual dose for this
 
 This rule applies to expectedActions in phases AND to criticalActions/expectedActions in the assessment section.
 
+## Protocol Set Priority
+
+When protocols from multiple sets are provided, they are listed in priority order (highest priority first). If you encounter conflicting clinical guidance (dosages, thresholds, procedures) across protocols from different sets, follow the guidance from the higher-priority set. In the protocolReference field of each expectedAction, include the set name, e.g., "MATC: medical-anaphylaxis".
+
 ## Generation Guidelines
 
 - Create realistic, clinically accurate scenarios based on the protocols provided
