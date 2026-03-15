@@ -130,7 +130,7 @@ function buildScenePanel(s: UnifiedScenario): string {
     <div class="card-title">Dispatch</div>
     <div class="card-content" style="font-size:14px;color:var(--text-secondary)">${escHtml(scene.dispatch)}</div>
   </div>` : ""}
-  <div class="card accordion" onclick="this.classList.toggle('open')">
+  <div class="card accordion open" onclick="this.classList.toggle('open')">
     <div class="card-title">Scene Setup</div>
     <div class="accordion-body">
       ${scene?.location ? `<div class="scene-row"><div class="scene-label">Location</div><div class="scene-value">${escHtml(scene.location)}</div></div>` : ""}
