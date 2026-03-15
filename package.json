@@ -16,9 +16,12 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@inquirer/prompts": "^8.3.0",
     "ajv": "^8.18.0",
     "dotenv": "^17.3.1",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^5.5.207"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
