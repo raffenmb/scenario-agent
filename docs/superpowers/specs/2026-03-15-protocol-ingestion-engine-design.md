@@ -10,7 +10,7 @@
 
 ## Problem
 
-The app currently ships with a fixed library of 28 hand-written protocol `.md` files in `protocol_docs/`. Users cannot add their own protocols without manually authoring Markdown files with the correct frontmatter format. Different organizations, certifications, and jurisdictions use different protocol sets (regional EMS, AHA ACLS, local fire department, etc.), and users need the ability to bring their own protocols into the system.
+The app currently ships with a fixed library of 68 hand-written protocol `.md` files in `protocol_docs/`. Users cannot add their own protocols without manually authoring Markdown files with the correct frontmatter format. Different organizations, certifications, and jurisdictions use different protocol sets (regional EMS, AHA ACLS, local fire department, etc.), and users need the ability to bring their own protocols into the system.
 
 ## Solution
 
@@ -35,7 +35,7 @@ Converts any supported source file into a normalized array of chunks for the ing
 
 | Format | Strategy |
 |---|---|
-| PDF | Render each page as a base64 image for Claude vision |
+| PDF | Render each page as a base64 image for Claude vision using `pdf2pic` (GraphicsMagick-based, cross-platform) or `pdfjs-dist` with canvas rendering. Library choice deferred to implementation based on platform testing. |
 | Images (PNG, JPG) | Single chunk sent directly to vision |
 | DOCX | Programmatic text extraction via `mammoth`. Embedded images detected and sent to vision separately |
 | TXT, MD | Raw text split by heading boundaries or fixed token windows (~2000 tokens) |
@@ -212,7 +212,7 @@ protocol_docs/
     .ingestion-state.json
 ```
 
-**Migration:** Existing 28 protocols move from `protocol_docs/` root into `protocol_docs/MATC/`. The protocol loader is updated to scan subdirectories.
+**Migration:** Existing 68 protocols move from `protocol_docs/` root into `protocol_docs/MATC/`. The protocol loader is updated to scan subdirectories.
 
 ### Priority-Ordered Selection
 
@@ -220,7 +220,7 @@ At scenario generation time, the user selects which sets to include and assigns 
 
 ```
 Select protocol sets for this scenario:
-  [x] 1. MATC (28 protocols)          <- highest priority
+  [x] 1. MATC (68 protocols)          <- highest priority
   [x] 2. AHA ACLS 2025 (8 protocols)
   [ ]    Regional EMS 2024 (12 protocols)
 
@@ -228,9 +228,9 @@ Select protocol sets for this scenario:
 ```
 
 - Selection is **set-level only** — all protocols in a selected set are available, no individual protocol toggling
-- Priority order determines conflict resolution: when multiple protocols from different sets address the same clinical situation with differing guidance (dosages, thresholds, procedures), the scenario generator follows the higher-priority set
+- Priority order determines conflict resolution: when multiple protocols from different sets address the same clinical situation with differing guidance (dosages, thresholds, procedures), the scenario generator follows the higher-priority set. Conflict resolution is **LLM-judged** — the scenario generator's system prompt includes the priority-ordered list of sets and instructs it: "When you encounter conflicting clinical guidance (dosages, thresholds, procedures) across protocols from different sets, follow the guidance from the higher-priority set. Cite the specific protocol and set that drove each clinical decision." The LLM uses its clinical understanding to detect overlapping guidance; no structural slug-matching or automated conflict detection is needed.
 - The protocol selector agent sees all protocols from selected sets
-- The scenario generator's system prompt is updated with priority instructions and cites which protocol drove each decision in the `protocolReference` field
+- The scenario generator's `protocolReference` field is updated to include set context (e.g., `"MATC: medical-anaphylaxis"`) so the output explicitly traces which set drove each decision
 
 ---
 
@@ -245,10 +245,11 @@ ts-node src/index.ts ingest --name "AHA ACLS 2025" path/to/file.pdf
 1. Prompt for name interactively if `--name` not provided
 2. Check for existing state file — resume if found
 3. Run document reader to produce chunks
-4. Run ingestion agent loop (page by page, updating state)
-5. Run reconciliation pass
-6. Display summary, prompt for confirmation
-7. Write `.md` files to `protocol_docs/{set-slug}/`
+4. Run ingestion agent loop (page by page, updating state file with accumulated content)
+5. Display summary from state file, prompt for confirmation
+6. Write `.md` files to `protocol_docs/{set-slug}/`
+7. Run reconciliation pass on written files (resolve `[[UNRESOLVED:slug]]` placeholders)
+8. Update state file status to `completed`
 
 ### Generate Mode (Modified)
 
@@ -269,7 +270,11 @@ ts-node src/index.ts generate "52-year-old male with chest pain"
 
 ### New Dependency
 
-`@inquirer/prompts` (or similar) for interactive checklist and reordering UI.
+| Package | Purpose |
+|---|---|
+| `@inquirer/prompts` (or similar) | Interactive checklist and reordering UI |
+| `mammoth` | DOCX text extraction |
+| PDF rendering library (`pdf2pic` or `pdfjs-dist`) | PDF page-to-image conversion for vision |
 
 ---
 
@@ -277,7 +282,7 @@ ts-node src/index.ts generate "52-year-old male with chest pain"
 
 | Case | Handling |
 |---|---|
-| Duplicate slugs across sets | Disambiguate with set prefix: `aha-acls-2025/cardiac-arrest-adult` vs `MATC/cardiac-arrest-adult` |
+| Duplicate slugs across sets | The `ProtocolEntry` interface gains a `set` field. Internally, protocols are keyed as `{set}/{slug}` (e.g., `aha-acls-2025/cardiac-arrest-adult`). The protocol selector agent receives set-qualified slugs. `readProtocol()` is updated to accept `set/slug` paths. Cross-references within the same set use bare slugs; the loader qualifies them at load time. |
 | Corrupt/unreadable page | Log as skipped with reason `"unreadable"`, continue processing |
 | Document yields zero protocols | Inform user, don't create set folder |
 | State file mismatch (source file changed) | Warn user, ask whether to resume or restart |
@@ -287,6 +292,17 @@ ts-node src/index.ts generate "52-year-old male with chest pain"
 | Conflicting guidance across sets | Higher-priority set wins; scenario generator cites which protocol it followed |
 
 ---
+
+## Testing
+
+| Component | Test Approach |
+|---|---|
+| Document reader | Unit tests with fixture files (small PDF, DOCX, TXT, MD). Verify correct chunk count, type assignment, and content extraction. |
+| State management | Unit tests for state initialization, resumption logic, state file mismatch detection, and page-by-page updates. |
+| Protocol writer | Unit tests verifying correct frontmatter generation and `.md` file structure from sample ingestion data. |
+| Reconciler | Unit tests with mock protocol files containing `[[UNRESOLVED:slug]]` placeholders. Verify resolution against a mock index. |
+| Protocol loader (modified) | Update existing `loader.test.ts` to cover subdirectory scanning, set-qualified slugs, and multi-set index building. |
+| Ingestion agent | Integration test with a small sample document, verifying end-to-end extraction produces valid `.md` files. |
 
 ## Files to Create
 
