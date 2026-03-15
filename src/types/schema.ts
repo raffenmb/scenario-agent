@@ -193,6 +193,7 @@ export const ARREST_WAVEFORM_CODES = new Set([18, 3]);
 
 export interface ProtocolEntry {
   slug: string;
+  set: string;
   section: string;
   description: string;
   filePath: string;
