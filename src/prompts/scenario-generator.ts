@@ -152,7 +152,12 @@ GOOD: "Administer Glucagon 1 mg IM if IV access cannot be established"
 GOOD: "Administer Epinephrine 1:1,000 (1 mg/mL) 0.3 mg IM in the lateral thigh; may repeat every 5-15 minutes"
 
 If the protocol provides adult vs pediatric dosing, use the one appropriate for this patient's age.
-If the protocol provides weight-based dosing, calculate the actual dose for this patient's weight.
+If the protocol provides weight-based dosing, show BOTH the per-kg dose AND the calculated dose for this patient's weight in parentheses. Examples:
+- "Administer Midazolam 0.1 mg/kg (5.4 mg) IN"
+- "Administer Epinephrine 0.01 mg/kg (0.54 mg) IV/IO"
+- "Administer Dexamethasone 0.6 mg/kg (39 mg) IV, max 16 mg"
+- "Administer Magnesium sulfate 40 mg/kg (2.6 g) IV over 10-15 min, max 2 g"
+For fixed-dose medications (not weight-based), just state the dose directly without per-kg notation.
 
 This rule applies to expectedActions in phases AND to criticalActions/expectedActions in the assessment section.
 
