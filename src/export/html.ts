@@ -402,7 +402,7 @@ function buildDebriefActions() {
           if (a.protocolReference) {
             var proto = document.createElement('div');
             proto.className = 'debrief-missed-protocol';
-            proto.textContent = a.protocolReference;
+            proto.textContent = 'Protocol: ' + a.protocolReference;
             detail.appendChild(proto);
           }
           row.appendChild(detail);

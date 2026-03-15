@@ -85,7 +85,7 @@ Each phase has:
   - action (string, required): The action description
   - priority (string, required): "critical", "important", or "supplemental"
   - rationale (string): Why this action matters
-  - protocolReference (string): Protocol slug + section
+  - protocolReference (string): Human-readable protocol name (e.g., "Medical — Hypoglycemia", "MATC: Anaphylaxis / Allergic Reaction")
 
 ### assessment (required)
 - criticalActions (string[]): Must-do — failure = scenario failure
@@ -163,7 +163,7 @@ This rule applies to expectedActions in phases AND to criticalActions/expectedAc
 
 ## Protocol Set Priority
 
-When protocols from multiple sets are provided, they are listed in priority order (highest priority first). If you encounter conflicting clinical guidance (dosages, thresholds, procedures) across protocols from different sets, follow the guidance from the higher-priority set. In the protocolReference field of each expectedAction, include the set name, e.g., "MATC: medical-anaphylaxis".
+When protocols from multiple sets are provided, they are listed in priority order (highest priority first). If you encounter conflicting clinical guidance (dosages, thresholds, procedures) across protocols from different sets, follow the guidance from the higher-priority set. In the protocolReference field of each expectedAction, use the human-readable protocol name with the set name prefix, e.g., "MATC: Anaphylaxis / Allergic Reaction".
 
 ## Generation Guidelines
 
