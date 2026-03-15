@@ -81,8 +81,8 @@ async function readDocxFile(filePath: string): Promise<DocumentChunk[]> {
 }
 
 async function readPdfFile(filePath: string): Promise<DocumentChunk[]> {
-  const pdfParseModule = await import('pdf-parse');
-  const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const pdfParse = require('pdf-parse');
   const buffer = fs.readFileSync(filePath);
   const pdf = await pdfParse(buffer);
 
