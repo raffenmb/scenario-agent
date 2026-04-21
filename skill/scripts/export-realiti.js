@@ -34,6 +34,9 @@ function normalizeTrendTime(val) {
 }
 
 function exportRealiti(scenario) {
+  // Include both default and branch phases as scenarioEvents so instructors can
+  // manually fire decompensation/branch states from REALITi's quick menu.
+  // Default phases first, branches after, so the natural timeline order is preserved.
   const defaultPhases = scenario.phases.filter(p => p.isDefault === true || p.isDefault === undefined);
   const branchPhases = scenario.phases.filter(p => p.isDefault === false);
   const allPhases = [...defaultPhases, ...branchPhases];
