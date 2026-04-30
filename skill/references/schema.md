@@ -163,13 +163,21 @@ Array of phase objects. Each scenario needs:
 
 ### expectedActions[]
 
+Every expected action MUST trace to specific text in one of the selected MATC protocols — do not invent steps or add general best-practice that is not in the protocol.
+
+The V4 viewer uses these fields as follows:
+- The **live right-toolbar checklist** (during the scenario) renders `shortAction`.
+- The **debrief view** also renders `shortAction` as the primary line, with the verbose `action` and `protocolReference` as subtext.
+- `action` (verbose) is the canonical clinical reference and is used by the REALITi export.
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | id | string | yes | Unique action ID within this phase |
-| action | string | yes | The action description (see medication rules below) |
+| shortAction | string | yes | Concise version of the step — 5–15 words, action-focused. **Med actions must keep dose math and max/repeat** (drop only wordy reasoning and route detail beyond what is essential). Examples: `"Rapid primary survey (ABC); recognize impending respiratory failure"`, `"Epinephrine 1:1000 0.25 mg IM (25 kg × 0.01 mg/kg; max 0.3 mg)"`. Primary text shown in the right-toolbar checklist and as the headline line on the debrief view. |
+| action | string | yes | Verbose canonical description (see medication rules below). Includes criteria, full dose math, route, concentration, max/repeat, and the cues that justify the call. Shown as subtext under `shortAction` on the debrief view, and used by the REALITi export. |
 | priority | string | yes | "critical", "important", or "supplemental" |
 | rationale | string | no | Why this action matters |
-| protocolReference | string | no | Human-readable protocol name, e.g., "MATC: Hypoglycemia" |
+| protocolReference | string | yes | Human-readable protocol name, verbatim. Format: `"MATC: <Protocol Name>"` (e.g., `"MATC: Hypoglycemia"`, `"MATC: Cardiac Arrest"`). Required so the debrief view can show the source protocol. |
 
 ---
 

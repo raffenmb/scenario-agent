@@ -58,7 +58,14 @@ Read `<skill-path>/references/schema.md` for the complete schema specification, 
 Generate a complete JSON object conforming to the unified scenario schema. Key things to get right:
 
 - **ECG rhythm/waveform pairing**: Every `ecgRhythm` must come from the ECG table, and `ecgWaveform` must be the matching code
-- **Medication actions**: When an expected action involves a medication, include drug name, dose (with weight-based calculation, using `patient.weight` in **kg**), route, concentration, and repeat/max dosing — all from the protocol
+- **Expected actions are protocol-grounded only**: Every `expectedAction.action` must trace to specific text in one of the selected MATC protocols. Do **not** invent steps, add general "best practice" advice that is not in the protocol, or fold in habits from outside MATC. If a step is in the protocol, include it; if it is not in the protocol, leave it out. The `protocolReference` field must name the source protocol verbatim (e.g., `"MATC: Respiratory Distress"`).
+- **Two action versions — verbose and short**: Every `expectedAction` carries both:
+  - `shortAction` (concise) — the **primary instructor-facing text**, used in both the live right-toolbar checklist during the scenario AND as the headline line on the debrief tab. 5-15 words, action-focused. **Med actions must keep dose math + max/repeat in the short version** (drop only the wordy reasoning and the route detail beyond what is essential).
+  - `action` (verbose) — the full canonical reference: include criteria, dose math with calc, route, concentration, max/repeat, and cues that justify the call. Used by REALITi exports and shown as **subtext under the short version on the debrief tab**.
+  - Examples:
+    - verbose: `"Perform rapid primary survey (ABC), recognize severe respiratory distress and impending respiratory failure based on tripoded posture, retractions, nasal flaring, 1–2 word speech, cyanosis, and SpO2 86%"` → short: `"Rapid primary survey (ABC); recognize impending respiratory failure"`
+    - verbose: `"Administer Epinephrine 1 mg/mL (1:1,000) 0.01 mg/kg IM (0.25 mg = 0.25 mL for 25 kg patient; protocol maximum 0.3 mg) into the lateral thigh (vastus lateralis) using a 21–23g 1-inch needle; document time of administration"` → short: `"Epinephrine 1:1000 0.25 mg IM (25 kg × 0.01 mg/kg; max 0.3 mg)"`
+- **Medication actions** (verbose): When an expected action involves a medication, include drug name, dose (with weight-based calculation, using `patient.weight` in **kg**), route, concentration, and repeat/max dosing — all from the protocol
 - **Units, primary vs secondary**: `patient.weight` (kg) and `monitorState.temp` (°C) are kept for med math and data export. The **primary display values** are `patient.weightLbs` and `monitorState.tempF`. Always emit both pairs. Pediatric/medication math always uses kg from `patient.weight`.
 - **Cardiac arrest enforcement**: If the rhythm is asystole or VFib, or HR=0/BP=0/0, set spo2=0 and spo2Visible=false
 - **AVPU/GCS consistency**: Unresponsive must have GCS <= 6, Alert must have GCS >= 14

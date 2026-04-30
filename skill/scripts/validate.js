@@ -104,6 +104,15 @@ function validate(scenario) {
     }
   }
 
+  // expectedAction validation: every action must have shortAction + protocolReference.
+  for (const phase of scenario.phases) {
+    for (const a of (phase.expectedActions || [])) {
+      if (!a.action) errors.push(`Phase "${phase.id}": expectedAction "${a.id}" missing "action" (verbose)`);
+      if (!a.shortAction) errors.push(`Phase "${phase.id}": expectedAction "${a.id}" missing required "shortAction" (concise version)`);
+      if (!a.protocolReference) errors.push(`Phase "${phase.id}": expectedAction "${a.id}" missing required "protocolReference"`);
+    }
+  }
+
   // Per-phase validation
   for (const phase of scenario.phases) {
     const ms = phase.monitorState;
