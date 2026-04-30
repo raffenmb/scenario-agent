@@ -34,7 +34,7 @@ If the user asks to **ingest or import a protocol document** (PDF/DOCX/etc.) int
 
 - **Protocol files**: `<skill-path>/references/protocols/MATC/` — 68 MATC EMS protocol markdown files with YAML frontmatter
 - **Export scripts**: `<skill-path>/scripts/` — Node.js scripts for HTML export, REALITi export, and validation
-- **HTML template**: `<skill-path>/assets/scenario-template.html` — CSS template for interactive HTML
+- **HTML viewer assets**: `<skill-path>/assets/scenario-bundle.html` (React + fonts + Babel chassis) and `<skill-path>/assets/scenario-viewer.jsx` (the interactive scenario viewer component) — both consumed by `export-html.js`
 - **Schema reference**: `<skill-path>/references/schema.md` — full schema, ECG table, validation rules
 
 The default output directory is `~/Desktop/projects/scenario_agent/output/`. Create a subdirectory named after the scenario ID (e.g., `output/hypo-001/`).
@@ -93,7 +93,7 @@ Run all three export scripts:
 
 ```bash
 node "<skill-path>/scripts/export-realiti.js" "<output-dir>/unified.json" "<output-dir>/realiti.json"
-node "<skill-path>/scripts/export-html.js" "<output-dir>/unified.json" "<output-dir>/index.html" "<skill-path>/assets/scenario-template.html"
+node "<skill-path>/scripts/export-html.js" "<output-dir>/unified.json" "<output-dir>/index.html"
 node "<skill-path>/scripts/export-print.js" "<output-dir>/unified.json" "<output-dir>/printable.html"
 ```
 
