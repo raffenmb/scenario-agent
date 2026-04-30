@@ -37,7 +37,7 @@ If the user asks to **ingest or import a protocol document** (PDF/DOCX/etc.) int
 - **HTML viewer assets**: `<skill-path>/assets/scenario-bundle.html` (React + fonts + Babel chassis) and `<skill-path>/assets/scenario-viewer.jsx` (the interactive scenario viewer component) — both consumed by `export-html.js`
 - **Schema reference**: `<skill-path>/references/schema.md` — full schema, ECG table, validation rules
 
-The default output directory is `~/Desktop/projects/scenario_agent/output/`. Create a subdirectory named after the scenario ID (e.g., `output/hypo-001/`).
+The output directory is `output/` relative to the user's current working directory (i.e., the project root from which the skill was invoked). Create a subdirectory named after the scenario ID inside it (e.g., `output/hypo-001/`).
 
 ---
 
