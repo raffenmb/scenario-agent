@@ -81,6 +81,29 @@ function validate(scenario) {
     errors.push('No entry phase found — at least one phase must lack triggerCondition');
   }
 
+  // Every non-terminal primary phase must have at least one transition; every transition needs `if`, `condition`, `conditionType`.
+  for (let i = 0; i < defaultPhases.length; i++) {
+    const phase = defaultPhases[i];
+    const isLastDefault = i === defaultPhases.length - 1;
+    const transitions = phase.transitions || [];
+    if (!isLastDefault && transitions.length === 0) {
+      errors.push(`Phase "${phase.id}": non-terminal primary phase has no transitions — add at least the proper-next transition`);
+    }
+    for (const t of transitions) {
+      if (!t.if) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing required "if" (short conditional clause)`);
+      if (!t.condition) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing "condition"`);
+      if (!t.conditionType) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing "conditionType"`);
+    }
+  }
+  // Improper branch transitions also need `if`/`condition`/`conditionType` if present.
+  for (const phase of scenario.phases.filter(p => p.isDefault === false)) {
+    for (const t of (phase.transitions || [])) {
+      if (!t.if) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing required "if"`);
+      if (!t.condition) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing "condition"`);
+      if (!t.conditionType) errors.push(`Phase "${phase.id}": transition to "${t.targetPhaseId}" missing "conditionType"`);
+    }
+  }
+
   // Per-phase validation
   for (const phase of scenario.phases) {
     const ms = phase.monitorState;

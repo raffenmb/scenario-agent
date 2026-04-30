@@ -234,7 +234,7 @@ function buildPhasePanel(phase, patient) {
 }
 
 function buildDebriefPanel(s) {
-  const d = s.debriefing;
+  const d = s.debriefing || {};
   return `
 <div class="panel" id="panel-debrief">
   ${(d.learningObjectives ?? []).length ? `

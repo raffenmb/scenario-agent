@@ -9,12 +9,10 @@ This document defines the complete JSON schema for paramedic training scenarios,
 3. [patient](#patient)
 4. [scene](#scene)
 5. [phases](#phases)
-6. [assessment](#assessment)
-7. [debriefing](#debriefing)
-8. [realiti](#realiti-config)
-9. [ECG Rhythm Code Table](#ecg-rhythm-code-table)
-10. [Validation Rules](#validation-rules)
-11. [Medication Action Rules](#medication-action-rules)
+6. [realiti](#realiti-config)
+7. [ECG Rhythm Code Table](#ecg-rhythm-code-table)
+8. [Validation Rules](#validation-rules)
+9. [Medication Action Rules](#medication-action-rules)
 
 ---
 
@@ -26,8 +24,6 @@ This document defines the complete JSON schema for paramedic training scenarios,
   "patient": {},
   "scene": {},
   "phases": [],
-  "assessment": {},
-  "debriefing": {},
   "realiti": {}
 }
 ```
@@ -60,44 +56,48 @@ All top-level keys are required except `realiti`.
 | age | number | yes | Patient age |
 | ageUnit | string | no | Default "years" |
 | sex | string | yes | "male" or "female" |
-| weight | number | yes | Weight in kg |
+| weight | number | yes | Weight in **kg** — used for all weight-based medication math. |
+| weightLbs | number | yes | Weight in **pounds** — primary display value. Round sensibly (whole pounds for adults, one decimal for small peds if useful). |
 | height | number | yes | Height in cm |
 | chiefComplaint | string | yes | Chief complaint |
 | history | object | yes | SAMPLE history (see below) |
 
 ### patient.history
 
-| Field | Type | Description |
-|-------|------|-------------|
-| hpi | string | Detailed history of present illness |
-| pastMedical | string[] | Past medical history items |
-| medications | string[] | Current medications with doses |
-| allergies | string[] | Allergies with reaction type |
-| lastOralIntake | string | Last oral intake |
-| events | string | Events leading to EMS call |
+This block carries the full SAMPLE history (Signs/Symptoms via `patient.chiefComplaint`, Allergies, Medications, Past medical, Last oral intake, Events) plus a detailed HPI. **All fields are required on every scenario** — the V4 viewer renders a SAMPLE card on the initial-contact phase that pulls from these fields.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| hpi | string | yes | Detailed history of present illness |
+| pastMedical | string[] | yes | Past medical history items (use `[]` if truly none — e.g., a healthy young patient) |
+| medications | string[] | yes | Current medications with doses (use `[]` if none reported) |
+| allergies | string[] | yes | Allergies with reaction type (use `["NKDA"]` if no known drug allergies) |
+| lastOralIntake | string | yes | Last oral intake — what and when |
+| events | string | yes | Events leading to EMS call |
 
 ---
 
 ## scene
 
-| Field | Type | Description |
-|-------|------|-------------|
-| dispatch | string | What the paramedic hears from dispatch. Keep it realistic but generic — do NOT reveal the diagnosis. A postictal patient dispatches as "altered mental status," not "seizure." Include age, sex, brief complaint, and location type. |
-| location | string | Detailed location description |
-| time | string | Time and day context |
-| safety | string | Scene safety considerations |
-| bystanders | string | Who is present, what they report |
-| visualCues | string[] | What providers see on arrival |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| dispatch | string | yes | What the paramedic hears from dispatch. Keep it realistic but generic — do NOT reveal the diagnosis. A postictal patient dispatches as "altered mental status," not "seizure." Include age, sex, brief complaint, and location type. The V4 viewer renders a Dispatch card on the initial-contact phase that pulls this verbatim. |
+| location | string | yes | Detailed location description |
+| time | string | yes | Time and day context |
+| safety | string | yes | Scene safety considerations |
+| bystanders | string | no | Who is present, what they report |
+| visualCues | string[] | no | What providers see on arrival |
 
 ---
 
 ## phases
 
 Array of phase objects. Each scenario needs:
-- At least one phase with no `triggerCondition` (the entry phase)
+- **Exactly one entry phase**: a primary phase with no `triggerCondition` (the V4 viewer renders this as the initial-contact tab; it shows the Dispatch + SAMPLE history cards and never shows a "Triggered by" callout).
 - At least one phase with `isDefault: true` (the expected/"happy" path)
 - At least one branch phase (`isDefault: false`) showing consequences of delayed/incorrect treatment
 - Typically 3-5 phases on the default path, plus 1+ branch phases
+- **Every non-terminal primary phase must have at least one transition** — the proper-next link to the next default phase, plus any improper branches. Terminal phases (the last default phase, and dead-end improper branches) keep `transitions: []` or omit the field.
 
 ### Phase object
 
@@ -115,13 +115,16 @@ Array of phase objects. Each scenario needs:
 
 ### transitions[]
 
-| Field | Type | Description |
-|-------|------|-------------|
-| targetPhaseId | string | id of target phase (must exist) |
-| condition | string | Human-readable condition |
-| conditionType | string | "action_not_taken", "action_taken", "time_elapsed", "vital_threshold" |
-| timeoutSeconds | number | For time-based conditions |
-| triggerActionIds | string[] | References to expectedActions[].id |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| targetPhaseId | string | yes | id of target phase (must exist) |
+| if | string | yes | Short, action-focused conditional clause for the branch UI. 3-8 words, present-tense, no leading "If" (the UI prefixes it). Examples: `"Duoneb started"`, `"IM Epi given"`, `"Duoneb >10 min, no IM Epi"`, `"NTG given without PDE5 screen"`. |
+| condition | string | yes | Long-form, human-readable condition with full clinical detail (used for protocol/REALITi exports and instructor reference). |
+| conditionType | string | yes | `"action_taken"`, `"action_not_taken"`, `"time_elapsed"`, or `"vital_threshold"`. |
+| triggerActionIds | string[] | recommended | References to `expectedActions[].id` that drive the transition. |
+| timeoutSeconds | number | optional | For time-based conditions. |
+
+**Authoring rule for `if`:** the UI displays each transition as `IF <if-clause> → <destination phase>`. Keep the clause short and action-focused so the row reads like a choose-your-own-adventure beat. Avoid clinical detail (that goes in `condition`).
 
 ### clinicalPresentation
 
@@ -150,7 +153,8 @@ Array of phase objects. Each scenario needs:
 | respRate | number | Respiratory rate (/min) |
 | spo2 | number | SpO2 (%) |
 | etco2 | number | EtCO2 (mmHg) |
-| temp | number | Temperature (Celsius) |
+| temp | number | Temperature in **°C** — kept for completeness/data export. |
+| tempF | number | Temperature in **°F** — primary display value. Round to one decimal. |
 | obstruction | number | Airway obstruction 0-100 |
 | glucose | number | Blood glucose (mg/dL) |
 | customMeasures | array | `[{ label: string, value: number }]` |
@@ -166,27 +170,6 @@ Array of phase objects. Each scenario needs:
 | priority | string | yes | "critical", "important", or "supplemental" |
 | rationale | string | no | Why this action matters |
 | protocolReference | string | no | Human-readable protocol name, e.g., "MATC: Hypoglycemia" |
-
----
-
-## assessment
-
-| Field | Type | Description |
-|-------|------|-------------|
-| criticalActions | string[] | Must-do actions — failure = scenario failure |
-| expectedActions | string[] | Should-do actions |
-| bonusActions | string[] | Above-and-beyond mastery actions |
-
----
-
-## debriefing
-
-| Field | Type | Description |
-|-------|------|-------------|
-| learningObjectives | string[] | What students should learn |
-| discussionQuestions | string[] | Open-ended debrief questions |
-| commonPitfalls | string[] | Common mistakes students make |
-| keyTakeaways | string[] | Core lessons |
 
 ---
 
@@ -285,9 +268,10 @@ Several rhythms share waveform codes. Differentiate using vitals:
 3. **No circular references**: Phase transition chains must not loop back
 4. **Default path exists**: At least one phase must have `isDefault: true` (or undefined, which defaults to true)
 5. **Entry phase exists**: At least one phase must lack `triggerCondition`
-6. **ECG waveform match**: If `ecgRhythm` is in the table, `ecgWaveform` must equal the table value
-7. **Cardiac arrest enforcement**: If waveform is 18 (VFib) or 3 (Asystole), OR if hr=0 + bpSys=0 + bpDia=0: spo2 must be 0 and spo2Visible must be false
-8. **Obstruction range**: 0-100
+6. **Every non-terminal primary phase has transitions**: A primary phase (`isDefault: true`) that is not the last in the default path must have at least one transition. Each transition must include `if`, `condition`, and `conditionType`.
+7. **ECG waveform match**: If `ecgRhythm` is in the table, `ecgWaveform` must equal the table value
+8. **Cardiac arrest enforcement**: If waveform is 18 (VFib) or 3 (Asystole), OR if hr=0 + bpSys=0 + bpDia=0: spo2 must be 0 and spo2Visible must be false
+9. **Obstruction range**: 0-100
 
 ### Warnings (should fix)
 
@@ -332,7 +316,7 @@ If the protocol provides weight-based dosing, show BOTH the per-kg dose AND the 
 
 For fixed-dose medications (not weight-based), just state the dose directly.
 
-This rule applies to `expectedActions` in phases AND to `criticalActions`/`expectedActions` in the `assessment` section.
+This rule applies to `expectedActions` in phases.
 
 ### Protocol Set Priority
 
@@ -347,5 +331,4 @@ When protocols from multiple sets are provided, they are listed in priority orde
 - Make expectedActions specific and protocol-referenced where possible
 - Write detailed clinicalPresentation — this is what makes the scenario useful for teaching
 - Include practical visual cues in the scene that hint at the diagnosis
-- Write debriefing content that promotes critical thinking, not just recall
 - The dispatch line should sound like what a real dispatcher would say — brief, no diagnosis

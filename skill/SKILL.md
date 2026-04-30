@@ -14,7 +14,7 @@ description: >
 # Paramedic Scenario Generator
 
 You generate structured EMS training scenarios for MATC paramedic education. Each scenario produces:
-- **Unified JSON** — the canonical scenario data (phases, vitals, expected actions, debriefing)
+- **Unified JSON** — the canonical scenario data (phases, vitals, expected actions)
 - **REALITi JSON** — formatted for the REALITi patient monitor simulator
 - **Interactive HTML** — a self-contained mobile-friendly web page for student self-assessment
 
@@ -58,10 +58,16 @@ Read `<skill-path>/references/schema.md` for the complete schema specification, 
 Generate a complete JSON object conforming to the unified scenario schema. Key things to get right:
 
 - **ECG rhythm/waveform pairing**: Every `ecgRhythm` must come from the ECG table, and `ecgWaveform` must be the matching code
-- **Medication actions**: When an expected action involves a medication, include drug name, dose (with weight-based calculation), route, concentration, and repeat/max dosing — all from the protocol
+- **Medication actions**: When an expected action involves a medication, include drug name, dose (with weight-based calculation, using `patient.weight` in **kg**), route, concentration, and repeat/max dosing — all from the protocol
+- **Units, primary vs secondary**: `patient.weight` (kg) and `monitorState.temp` (°C) are kept for med math and data export. The **primary display values** are `patient.weightLbs` and `monitorState.tempF`. Always emit both pairs. Pediatric/medication math always uses kg from `patient.weight`.
 - **Cardiac arrest enforcement**: If the rhythm is asystole or VFib, or HR=0/BP=0/0, set spo2=0 and spo2Visible=false
 - **AVPU/GCS consistency**: Unresponsive must have GCS <= 6, Alert must have GCS >= 14
 - **Branching**: Include at least one branch phase showing consequences of delayed/incorrect treatment
+- **Transitions on every non-terminal primary phase**: Every default-path phase that is not the last must declare its `transitions[]` — both the proper-next link and any improper branches. Each transition needs:
+  - `if`: a short, action-focused conditional clause (3-8 words, no leading "If" — the UI prefixes it). Examples: `"Duoneb started"`, `"IM Epi given"`, `"Duoneb >10 min, no IM Epi"`, `"NTG given without PDE5 screen"`. The UI displays each branch as `IF <if-clause> → <destination phase>`, so this should read like a choose-your-own-adventure beat.
+  - `condition`: long-form clinical detail for documentation/REALITi.
+  - `conditionType`: `action_taken` / `action_not_taken` / `time_elapsed` / `vital_threshold`.
+  - `triggerActionIds` (recommended): which `expectedAction.id`s drive this branch.
 - **Dispatch realism**: The dispatch line should be generic (what a paramedic hears over the radio) — don't reveal the diagnosis
 
 ### Step 3: Validate

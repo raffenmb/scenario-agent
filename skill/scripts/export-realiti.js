@@ -167,20 +167,23 @@ function findRelatedChecklist(phase, checklist) {
 }
 
 function buildChecklist(scenario) {
+  // Aggregate every phase's expectedActions into a flat checklist.
   const items = [];
-  const allActions = [
-    ...(scenario.assessment.criticalActions ?? []),
-    ...(scenario.assessment.expectedActions ?? []),
-  ];
-  for (const title of allActions) {
-    items.push({ title, type: 'Check', value: 0, icon: 1 });
+  const seen = new Set();
+  for (const phase of scenario.phases) {
+    for (const a of (phase.expectedActions ?? [])) {
+      const title = a.action;
+      if (!title || seen.has(title)) continue;
+      seen.add(title);
+      items.push({ title, type: 'Check', value: 0, icon: 1 });
+    }
   }
   return items;
 }
 
 function buildStory(scenario, defaultPhases) {
-  const history = scenario.patient.history.hpi ?? '';
-  const discussion = (scenario.debriefing.learningObjectives ?? []).join('. ');
+  const history = scenario.patient.history?.hpi ?? '';
+  const discussion = '';
   const course = defaultPhases.map(p => `${p.name}: ${p.description}`).join(' → ');
   return { history, discussion, course };
 }
