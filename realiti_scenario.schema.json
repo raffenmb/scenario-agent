@@ -1,0 +1,374 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "REALITi Scenario Schema",
+  "type": "object",
+  "required": [
+    "scenarioId",
+    "scenarioName",
+    "scenarioStory",
+    "patientInformation",
+    "labs",
+    "scenarioEvents",
+    "checklist",
+    "media"
+  ],
+  "properties": {
+    "scenarioId": {
+      "type": "string"
+    },
+    "scenarioName": {
+      "type": "string"
+    },
+    "scenarioType": {
+      "type": "string",
+      "default": "Vital Signs"
+    },
+    "scenarioVersion": {
+      "type": "number",
+      "default": 2
+    },
+    "scenarioTime": {
+      "type": "number"
+    },
+    "scenarioMonitorType": {
+      "type": "number",
+      "default": 20
+    },
+    "scenarioDefaultEnergy": {
+      "type": "number",
+      "default": 200
+    },
+    "scenarioDefaultPacerThreshold": {
+      "type": "number",
+      "default": 55
+    },
+    "isDemo": {
+      "type": "boolean"
+    },
+    "isALSILegacy": {
+      "type": "boolean"
+    },
+    "scenarioStory": {
+      "type": "object",
+      "required": [
+        "history",
+        "discussion",
+        "course"
+      ],
+      "properties": {
+        "history": {
+          "type": "string"
+        },
+        "discussion": {
+          "type": "string"
+        },
+        "course": {
+          "type": "string"
+        }
+      }
+    },
+    "patientInformation": {
+      "type": "object",
+      "required": [
+        "patientName",
+        "patientAge",
+        "patientSex",
+        "patientHeight",
+        "patientWeight"
+      ],
+      "properties": {
+        "patientName": {
+          "type": "string"
+        },
+        "patientCondition": {
+          "type": "string"
+        },
+        "patientAge": {
+          "type": "number"
+        },
+        "patientAgeUnit": {
+          "type": "string",
+          "default": "years"
+        },
+        "patientAgeCategory": {
+          "type": "number"
+        },
+        "patientSex": {
+          "type": "number",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "patientHeight": {
+          "type": "number"
+        },
+        "patientWeight": {
+          "type": "number",
+          "multipleOf": 0.1
+        },
+        "patientPhotoId": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "patientAdmitted": {
+          "type": "number"
+        }
+      }
+    },
+    "labs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "parameters"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "abbreviation",
+                "name",
+                "unit",
+                "healthy_min",
+                "healthy_max",
+                "absolute_min",
+                "absolute_max",
+                "interval",
+                "value"
+              ],
+              "properties": {
+                "abbreviation": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "healthy_min": {
+                  "type": "number"
+                },
+                "healthy_max": {
+                  "type": "number"
+                },
+                "absolute_min": {
+                  "type": "number"
+                },
+                "absolute_max": {
+                  "type": "number"
+                },
+                "interval": {
+                  "type": "number"
+                },
+                "value": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scenarioEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "parameters"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "ScenarioEvent"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "monitorType": {
+            "type": "number"
+          },
+          "trendTime": {
+            "type": "number"
+          },
+          "jumpTime": {
+            "type": "number"
+          },
+          "defibShock": {
+            "type": "boolean"
+          },
+          "defibDisarm": {
+            "type": "boolean"
+          },
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "ecgWaveform": {
+                "type": "number"
+              },
+              "hr": {
+                "type": "number"
+              },
+              "bpSys": {
+                "type": "number"
+              },
+              "bpDia": {
+                "type": "number"
+              },
+              "respRate": {
+                "type": "number"
+              },
+              "spo2": {
+                "type": "number"
+              },
+              "spo2Visible": {
+                "type": "boolean"
+              },
+              "spo2Attached": {
+                "type": "boolean"
+              },
+              "rrVisible": {
+                "type": "boolean"
+              },
+              "etco2": {
+                "type": "number"
+              },
+              "etco2Visible": {
+                "type": "boolean"
+              },
+              "cvp": {
+                "type": "number"
+              },
+              "cvpVisible": {
+                "type": "boolean"
+              },
+              "papSys": {
+                "type": "number"
+              },
+              "papDia": {
+                "type": "number"
+              },
+              "papMean": {
+                "type": "number"
+              },
+              "icp": {
+                "type": "number"
+              },
+              "temp": {
+                "type": "number"
+              },
+              "obstruction": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "custMeasure1": {
+                "type": "number"
+              },
+              "custMeasure2": {
+                "type": "number"
+              },
+              "custMeasure3": {
+                "type": "number"
+              },
+              "custMeasureLabel1": {
+                "type": "string"
+              },
+              "custMeasureLabel2": {
+                "type": "string"
+              },
+              "custMeasureLabel3": {
+                "type": "string"
+              }
+            }
+          },
+          "relatedMedia": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedLabs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedChecklist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedSounds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "default": "Check"
+          },
+          "value": {
+            "type": "number",
+            "default": 0
+          },
+          "icon": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
